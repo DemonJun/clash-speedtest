@@ -40,6 +40,7 @@ type Config struct {
 	HTMLReport       string
 	OutputPath       string
 	FastMode         bool
+	EnableIPv6       bool
 }
 
 type SpeedTester struct {
@@ -291,6 +292,7 @@ type Result struct {
 	UploadSpeed   float64        `json:"upload_speed"`
 	Location      string         `json:"location"`
 	StreamUnlock  string         `json:"stream_unlock"`
+	IPv6Support   bool           `json:"ipv6_support"`
 }
 
 func (r *Result) FormatDownloadSpeed() string {
@@ -349,6 +351,10 @@ func (st *SpeedTester) testProxy(name string, proxy *CProxy) *Result {
 		ProxyName:   name,
 		ProxyType:   proxy.Type().String(),
 		ProxyConfig: proxy.Config,
+	}
+
+	if st.config.EnableIPv6 {
+		result.IPv6Support = st.testIPv6Support(proxy.Proxy)
 	}
 
 	// 1. 先进行延迟测试
@@ -610,4 +616,27 @@ func calculateLatencyStats(latencies []time.Duration, failedPings int) *latencyR
 func (st *SpeedTester) testStreamUnlock(proxy *CProxy) (string, error) {
 	client := st.createClient(proxy)
 	return unlock.TestAll(client, st.config.UnlockConcurrent, st.debugMode), nil
+}
+
+func (st *SpeedTester) testIPv6Support(proxy constant.Proxy) bool {
+	if !st.config.EnableIPv6 {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), st.config.Timeout)
+	defer cancel()
+
+	client := st.createClient(proxy)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ipv6.google.com", nil)
+	if err != nil {
+		return false
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK
 }

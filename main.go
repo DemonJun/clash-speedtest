@@ -39,6 +39,7 @@ var (
 	enableRisk        = flag.Bool("risk", false, "启用解锁测试时的 IP 风险检测(仅在-unlock模式下有效)")
 	htmlReport        = flag.String("html", "", "输出 HTML 报告的路径+名称(默认5秒自动刷新，支持手动刷新)")
 	fastMode          = flag.Bool("fast", false, "快速测试模式，仅测试节点延迟")
+	enableIPv6        = flag.Bool("ipv6", false, "启用 IPv6 支持检测")
 )
 
 const (
@@ -79,6 +80,7 @@ func main() {
 		HTMLReport:       *htmlReport,
 		OutputPath:       *outputPath,
 		FastMode:         *fastMode,
+		EnableIPv6:       *enableIPv6,
 	}, *debugMode)
 
 	if *debugMode {
@@ -214,6 +216,9 @@ func printResults(results []*speedtester.Result, enableUnlock bool) {
 			"下载速度",
 			"上传速度",
 		}
+	}
+	if *enableIPv6 {
+		headers = append(headers, "IPv6")
 	}
 	table.SetHeader(headers)
 
@@ -428,6 +433,14 @@ func printResults(results []*speedtester.Result, enableUnlock bool) {
 					downloadSpeedStr,
 					uploadSpeedStr,
 				}
+			}
+		}
+
+		if *enableIPv6 {
+			if result.IPv6Support {
+				row = append(row, colorGreen+"支持"+colorReset)
+			} else {
+				row = append(row, colorRed+"不支持"+colorReset)
 			}
 		}
 
