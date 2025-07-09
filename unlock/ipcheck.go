@@ -128,7 +128,7 @@ func doRequestWithRetry(client *http.Client, req *http.Request, maxRetries int, 
 	for i := 0; i < maxRetries; i++ {
 		if i > 0 {
 			// 重试前等待随机时间
-			time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+			time.Sleep(time.Duration(rand.Intn(2000)+500) * time.Millisecond)
 
 			// 重新生成请求头
 			isMobile := rand.Float32() < 0.3
@@ -285,7 +285,7 @@ func GetLocationWithRisk(client *http.Client, debugMode bool, enableRisk bool) (
 	}
 
 	// 设置总体超时
-	client.Timeout = 5 * time.Second
+	client.Timeout = 10 * time.Second
 
 	// 先获取地理位置
 	city, err := GetLocation(client, debugMode)
@@ -351,7 +351,7 @@ func GetLocationWithRisk(client *http.Client, debugMode bool, enableRisk bool) (
 	riskReq.Header.Set("Origin", "https://ipcheck.ing/")
 
 	// 使用重试机制获取风险值
-	riskResp, err := doRequestWithRetry(riskClient, riskReq, 3, debugMode)
+	riskResp, err := doRequestWithRetry(riskClient, riskReq, 5, debugMode)
 	if err != nil {
 		return city, nil
 	}
